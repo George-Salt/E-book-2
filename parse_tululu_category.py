@@ -9,11 +9,10 @@ from urllib.parse import urljoin, urlsplit, unquote
 
 
 SCIENCE_FICTION_CATEGORY_URL = "https://tululu.org/l55/{page}/"
-MAIN_URL = "https://tululu.org/"
 DOWNLOAD_URL = "https://tululu.org/txt.php"
 
 
-def parse_book_page(book_url, template_url):
+def parse_book_page(book_url):
     response = requests.get(book_url)
     response.raise_for_status()
     page_code = BeautifulSoup(response.text, "lxml")
@@ -22,7 +21,7 @@ def parse_book_page(book_url, template_url):
     book_name, author_name = header_tag.split(" :: ")
 
     img_selector = "div.bookimage img"
-    img_url = urljoin(template_url, page_code.select_one(img_selector)["src"])
+    img_url = urljoin(book_url, page_code.select_one(img_selector)["src"])
 
     genre_tag_selector = "span.d_book a"
     book_genre_tags = page_code.select(genre_tag_selector)
@@ -63,7 +62,7 @@ def download_book(download_url, params, filename, folder="books/"):
     return f"Книга: {filepath}"
 
 
-def get_books_urls_from_category(category_url, main_url, start_page, end_page):
+def get_books_urls_from_category(category_url, start_page, end_page):
     books_urls = []
 
     for page in range(start_page, end_page):
@@ -73,7 +72,7 @@ def get_books_urls_from_category(category_url, main_url, start_page, end_page):
         books_selector = "table.d_book"
         books = page_code.select(books_selector)
         for book in books:
-            books_urls.append(urljoin(main_url, book.find("a")["href"]))
+            books_urls.append(urljoin(category_url.format(page=page), book.find("a")["href"]))
     return books_urls
 
 
@@ -125,13 +124,12 @@ if __name__ == "__main__":
 
     for book_url in get_books_urls_from_category(
         SCIENCE_FICTION_CATEGORY_URL,
-        MAIN_URL,
         args.start_page,
         args.end_page
     ):
         params = {"id": book_url.split("https://tululu.org/b")[1].split("/")[0]}
 
-        book_page = parse_book_page(book_url, MAIN_URL)
+        book_page = parse_book_page(book_url)
         books_parameters.append(book_page)
         if not args.skip_imgs:
             download_image(book_page["Ссылка на картинку"], folder=imgs_dir)
