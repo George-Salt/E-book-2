@@ -53,7 +53,7 @@ def download_image(img_url, folder):
     return f"Картинка: {filepath}"
 
 
-def download_book(download_url, params, filename, folder = "books/"):
+def download_book(download_url, params, filename, folder="books/"):
     response = requests.get(download_url, params=params)
     response.raise_for_status()
 
@@ -79,25 +79,56 @@ def get_books_urls_from_category(category_url, main_url, start_page, end_page):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Программа скачивает книги, картинки к ним и выводит описание книги."
+        description="Программа скачивает книги, обложки, сохраняет описание в JSON."
     )
-    parser.add_argument("--start_page", type=int, help="С какой книги скачать", default=1)
-    parser.add_argument("--end_page", type=int, help="До какой книги скачать", default=2)
-    parser.add_argument("--dest_folder", help="Путь к каталогу с результатами парсинга", default="media")
-    parser.add_argument("--skip_imgs", action="store_true", help="Не скачивать картинки")
-    parser.add_argument("--skip_txt", action="store_true", help="Не скачивать книги")
-    parser.add_argument("--json_path", help="Путь к JSON файлу с информацией о книгах", default="media")
+    parser.add_argument(
+        "--start_page",
+        type=int,
+        help="С какой книги скачать",
+        default=1
+    )
+    parser.add_argument(
+        "--end_page",
+        type=int,
+        help="До какой книги скачать",
+        default=2
+    )
+    parser.add_argument(
+        "--dest_folder",
+        help="Путь к каталогу с результатами парсинга",
+        default="media"
+    )
+    parser.add_argument(
+        "--skip_imgs",
+        action="store_true",
+        help="Не скачивать картинки"
+    )
+    parser.add_argument(
+        "--skip_txt",
+        action="store_true",
+        help="Не скачивать книги"
+    )
+    parser.add_argument(
+        "--json_path",
+        help="Путь к JSON файлу с информацией о книгах",
+        default="media"
+    )
     args = parser.parse_args()
 
     imgs_dir = f"./{args.dest_folder}/images"
     books_dir = f"./{args.dest_folder}/books"
 
-    os.makedirs(imgs_dir, exist_ok = True)
-    os.makedirs(books_dir, exist_ok = True)
+    os.makedirs(imgs_dir, exist_ok=True)
+    os.makedirs(books_dir, exist_ok=True)
 
     books_parameters = []
 
-    for book_url in get_books_urls_from_category(SCIENCE_FICTION_CATEGORY_URL, MAIN_URL, args.start_page, args.end_page):
+    for book_url in get_books_urls_from_category(
+        SCIENCE_FICTION_CATEGORY_URL,
+        MAIN_URL,
+        args.start_page,
+        args.end_page
+    ):
         params = {"id": book_url.split("https://tululu.org/b")[1].split("/")[0]}
 
         book_page = parse_book_page(book_url, MAIN_URL)
@@ -105,7 +136,12 @@ if __name__ == "__main__":
         if not args.skip_imgs:
             download_image(book_page["Ссылка на картинку"], folder=imgs_dir)
         if not args.skip_txt:
-            download_book(DOWNLOAD_URL, params, book_page["Название"], folder=books_dir)
+            download_book(
+                DOWNLOAD_URL,
+                params,
+                book_page["Название"],
+                folder=books_dir
+            )
 
     with open(f"./{args.json_path}/books.json", "w", encoding="utf-8") as file:
         json.dump(books_parameters, file, ensure_ascii=False)
